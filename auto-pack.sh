@@ -1,12 +1,10 @@
 #!/bin/bash
 # Pack update.zip
 
-DIST="/home/kangweodai/Vivam/CustomPackage/"
 PACKAGES=("GameLoft" "GameLoft_Yandex")
 DEFAULT_PACKAGE="GameLoft"
 LOCALS=("ALL" "ES" "ID" "IN" "IT" "KZ" "MM" "MY" "PH" "PK" "RU" "SG" "TH" "UA" "VN")
 CUSTOM_GMS_APK="custom/gms/apk/"
-ORIGIN="/home/kangweodai/Vivam/Projects/CustomPackage/origin"
 
 UPDATE="update"
 ZIP=".zip"
@@ -19,15 +17,17 @@ function pack() {
     apk_dir=${1}
     package=${2}
     locals=${3}
+    dist=${4}
+    origin=${5}
 
     # make distination directory if not exist
-    parent="${DIST}${package}/$(get_date_time)/"
+    parent="${dist}${package}/$(get_date_time)/"
     src="${parent}src/"
     mkdir -p -- "${src}"
     echo "create source directory ${src}. DONE"
 
     # copy origin files into distination directory
-    copy_recurive ${ORIGIN} ${src}
+    copy_recurive ${origin} ${src}
     echo "copy other configuration files. DONE"
 
     # copy apk_dir into ${src}custom/gms/apk/
@@ -128,7 +128,15 @@ function get_all_locals() {
 }
 
 function main() {
-    # Read target directory
+    # read distination path    
+    echo -n "Input distination path: "
+    read dist_answer
+
+    # read origin path
+    echo -n "Input origin path: "
+    read origin_answer
+
+    # read target directory
     local apk_dir=
     echo -n "Input full directory path with target apk_dir: "
     read apk_dir
@@ -145,7 +153,7 @@ function main() {
         return 1
     fi
 
-    # Read package value
+    # read package value
     local pkg_answer
 
     print_package_menu
@@ -235,8 +243,7 @@ function main() {
 
     echo
     echo "You choose locals ${lc_selection:-"NULL"}"
-
-    pack ${apk_dir} ${pkg_selection} ${lc_selection}
+    pack ${apk_dir} ${pkg_selection} ${lc_selection} ${dist_answer} ${origin_path}
 }
 
 main
