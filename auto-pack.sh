@@ -14,23 +14,23 @@ PRE_FILE=".pre.config"
 PRE_KEY="Pre No:"
 
 function pack() {
-    apk_dir=${1}
-    package=${2}
-    locals=${3}
-    dist=${4}
-    origin=${5}
-
-    # make distination directory if not exist
-    parent="${dist}${package}/$(get_date_time)/"
+    dest=${1}
+    origin=${2}
+    apk_dir=${3}
+    package=${4}
+    locals=${5}
+    
+    # make destination directory if not exist
+    parent="${dest}/${package}/$(get_date_time)/"
     src="${parent}src/"
     mkdir -p -- "${src}"
     echo "create source directory ${src}. DONE"
 
-    # copy origin files into distination directory
+    # copy origin files into destination directory
     copy_recurive ${origin} ${src}
     echo "copy other configuration files. DONE"
 
-    # copy apk_dir into ${src}custom/gms/apk/
+    # copy preinstalled apks into ${src}custom/gms/apk/
     if ! test -d "${src}${CUSTOM_GMS_APK}"
     then
         mkdir -p -- "${src}${CUSTOM_GMS_APK}"
@@ -128,17 +128,18 @@ function get_all_locals() {
 }
 
 function main() {
-    # read distination path    
-    echo -n "Input distination path: "
-    read dist_answer
+    # read destination path    
+    echo -n "Input destination path: "
+    read dest_answer
+    dest_answer=${dest_answer%/}
 
     # read origin path
-    echo -n "Input origin path: "
+    echo -n "Input config path: "
     read origin_answer
 
     # read target directory
     local apk_dir=
-    echo -n "Input full directory path with target apk_dir: "
+    echo -n "Input full directory path with preinstalled apks: "
     read apk_dir
 
     if [ -z ${apk_dir} ]
@@ -243,7 +244,7 @@ function main() {
 
     echo
     echo "You choose locals ${lc_selection:-"NULL"}"
-    pack ${apk_dir} ${pkg_selection} ${lc_selection} ${dist_answer} ${origin_path}
+    pack ${dest_answer} ${origin_answer} ${apk_dir} ${pkg_selection} ${lc_selection}
 }
 
 main
