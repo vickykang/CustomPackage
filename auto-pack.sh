@@ -1,8 +1,6 @@
 #!/bin/bash
 # Pack update.zip
 
-PACKAGES=("GameLoft" "GameLoft_Yandex")
-DEFAULT_PACKAGE="GameLoft"
 LOCALS=("ALL" "ES" "ID" "IN" "IT" "KZ" "MM" "MY" "PH" "PK" "RU" "SG" "TH" "UA" "VN")
 CUSTOM_GMS_APK="custom/gms/apk/"
 
@@ -17,11 +15,10 @@ function pack() {
     dest=${1}
     origin=${2}
     apk_dir=${3}
-    package=${4}
-    locals=${5}
+    locals=${4}
     
     # make destination directory if not exist
-    parent="${dest}/${package}/$(get_date_time)/"
+    parent="${dest}/$(get_date_time)/"
     src="${parent}src/"
     mkdir -p -- "${src}"
     echo "create source directory ${src}. DONE"
@@ -43,23 +40,26 @@ function pack() {
         echo "copy ${apk} to ${src}${CUSTOM_GMS_APK}. DONE"
     done
 
-    # compress src directory into update.zip without preinstalled no.
-    compress ${src} "${parent}${UPDATE}${ZIP}"
-
     # check locals
     if [ ! -z ${locals} ]
     then
+        # split locals to an array
+        IFS=',' read -r -a lc_array <<< "${locals}"
+        local count=${#lc_array[@]}
+        if [ ${count} -le 0 ]
+        then
+            compress ${src} "${parent}${UPDATE}_NU${ZIP}"
+            return
+        fi
+
         local file="${src}${PRE_DIC}/${PRE_FILE}"
 
         if [ ! -d ${src}${PRE_DIC} ]
         then
             mkdir -p -- "${src}${PRE_DIC}"
         fi
-        # touch .pre.config file into ${src}/${PRE_DIC}
-        touch "${file}"
 
-        # split locals to an array
-        IFS='|' read -r -a lc_array <<< "${locals}"
+        # touch .pre.config file into ${src}/${PRE_DIC}
         for lc in ${lc_array[@]}
         do
             if [ ! -z ${lc} ]
@@ -69,6 +69,8 @@ function pack() {
                 compress ${src} "${parent}${UPDATE}_${lc}${ZIP}"
             fi
         done
+    else
+        compress ${src} "${parent}${UPDATE}_NU${ZIP}"
     fi
 
     # remove ${src}
@@ -88,19 +90,6 @@ function compress() {
     zip -r "${2}" .
     echo "Compress ${1} to ${2}. DONE"
     cd -
-}
-
-function print_package_menu() {
-    echo
-    echo "Package menu... pick one:"
-    local i=1
-    local choice
-    for choice in ${PACKAGES[@]}
-    do
-        echo "    $i. $choice"
-        i=$(($i+1))
-    done
-    echo
 }
 
 function print_local_menu() {
@@ -128,19 +117,40 @@ function get_all_locals() {
 }
 
 function main() {
-    # read destination path    
-    echo -n "Input destination path: "
-    read dest_answer
+    local dest_answer=$1
     dest_answer=${dest_answer%/}
+    echo "destination: ${dest_answer}"
 
-    # read origin path
-    echo -n "Input config path: "
-    read origin_answer
+    if [ -z ${dest_answer} ]
+    then
+        echo 
+        echo "Empty destination path. STOP"
+        return 1
+    elif ! test -d ${dest_answer}
+    then
+        echo
+        echo "Invalid directory: ${dest_answer}. STOP"
+        return 1
+    fi
+
+    origin_answer=$2
+    echo "config path: ${origin_answer}"
+
+    if [ -z ${origin_answer} ]
+    then
+        echo
+        echo "Empty config path. STOP"
+        return 1
+    elif ! test -d ${origin_answer} 
+    then
+        echo
+        echo "Invalid directory: ${origin_answer}. STOP"
+        return 1
+    fi
 
     # read target directory
-    local apk_dir=
-    echo -n "Input full directory path with preinstalled apks: "
-    read apk_dir
+    local apk_dir=$3
+    echo "apk directory: ${apk_dir}"
 
     if [ -z ${apk_dir} ]
     then
@@ -154,97 +164,10 @@ function main() {
         return 1
     fi
 
-    # read package value
-    local pkg_answer
-
-    print_package_menu
-    echo -n "Which would you like? [${DEFAULT_PACKAGE}] "
-    read pkg_answer
-
-    local pkg_selection=
-    if [ -z "${pkg_answer}" ]
-    then
-        pkg_selection=${DEFAULT_PACKAGE}
-    elif (echo -n $pkg_answer | grep -q -e "^[12]$")
-    then
-        if [ $pkg_answer -le ${#PACKAGES[@]} ]
-        then
-            pkg_selection=${PACKAGES[$(($pkg_answer-1))]}
-        fi
-    else
-        for pkg in ${PACKAGES[@]}
-        do
-            if [ "${pkg_answer}" == "${pkg}" ]
-            then
-                pkg_selection=${pkg_answer}
-                break
-            fi
-        done
-    fi
-
-    if [ -z ${pkg_selection} ]
-    then
-        echo
-        echo "Invalid package: $pkg_answer. STOP"
-        return 1
-    fi
-
-    echo
-    echo "You choose package ${pkg_selection}"
-
     # Read local value
-    local lc_answer
+    local lc_answer=$4
 
-    print_local_menu
-    echo -n "Which would you like? [NULL] "
-    read lc_answer
-
-    local lc_selection=
-
-    if [ ! -z "${lc_answer}" ]
-    then
-        IFS='|' read -r -a lc_array <<< "${lc_answer}"
-        for lc in ${lc_array[@]}
-        do
-            echo "lc:${lc}"
-            case ${lc} in
-                "0")
-                    lc_selection=$(get_all_locals)
-                    break
-                    ;;
-                "ALL")
-                    lc_selection=$(get_all_locals)
-                    break
-                    ;;
-                *)
-                    if (echo -n $lc | grep -q -e "^[0-9][0-9]*$")
-                    then
-                        if [ $lc -lt ${#LOCALS[@]} ]
-                        then
-                            lc_selection="${lc_selection}|${LOCALS[$lc]}"
-                        fi
-                    else
-                        if [ ! -z ${lc} ]
-                        then
-                            lc_selection="${lc_selection}|${lc}"
-                        fi
-                    fi
-                    ;;
-              esac
-          done
-    fi
-
-    if [ ! -z ${lc_selection} ]
-    then
-        # remove '|' at the beginning if exists
-        lc_selection=${lc_selection#|}
-        # remote '|' in the end if exists
-        lc_selection=${lc_selection%|}
-    fi
-
-    echo
-    echo "You choose locals ${lc_selection:-"NULL"}"
-    pack ${dest_answer} ${origin_answer} ${apk_dir} ${pkg_selection} ${lc_selection}
+    pack ${dest_answer} ${origin_answer} ${apk_dir} ${lc_answer}
 }
 
-main
+main $@

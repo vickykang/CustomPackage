@@ -1,12 +1,13 @@
+### 使用方法
+
+```
+./auto-pack.sh full_destination_dir full_config_dir apk_dir locals(split with ',', optional)
+```
 ### 参数说明
-1. **Input destination path:** 目标路径，即输出的完整路径
-2. **Input config path:** 配置文件所存放的完整目录路径
-3. **Input full directory path with preinstalled apks:** 预装apk存放的完整目录路径
-4. **Package menu... pick one:** 预装包的类型，单选，默认`GameLoft`
-  - GameLoft
-  - GameLoft_Yandex
-5. **Local menu... pick one or more(split with '|':IN|IT|RU)**: 预装包的区域信息，多选或不选，`ALL`为全选，默认为空，多选以`|`分割。
-  - ALL
+1. **full_destination_dir:** 输出路径（绝对路径），不能为空，配管配置
+2. **full_config_dir:** 配置文件存放的目录路径（绝对路径），不能为空，配管配置
+3. **apk_dir:** 预装apk存放的目录路径（绝对路径），不能为空，由用户输入
+4. **locals** 区域码，多个区域码以‘``,``’（注意不是中文的‘`，`’）分隔，可为空，支持列表选择及用户输入，列表如下：
   - ES
   - ID
   - IN
@@ -21,10 +22,8 @@
   - TH
   - UA
   - VN
+  - GL
 
 ### 输出说明
-假设用户选择了`GameLoft`包
-- **区域参数为空：** 输出为`destination/GameLoft/yymmddHHMMSS/update.zip`，其中`destination`为第一个参数的目录路径，
-- **区域参数不为空:** 除了`destination/GameLoft/yymmddHHMMSS/update.zip`，每个区域会生成`destination/GameLoft/yymmddHHMMSS/update_XX.zip`的包，其中`XX`为区域码。
-
-`GameLoft_Yandex`包也是相同的。
+1. **区域码为空:** full_destination_dir/timestamp/update_NU.zip
+2. **区域码不为空:** 以`ID,IT`为例，在full_destination_dir/timestamp/文件夹下会分别输出update_ID.zip, update_IT.zip
